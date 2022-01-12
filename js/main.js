@@ -3,7 +3,7 @@ var images_arr = ['city_alley.jpg', 'city_clubint.jpg', 'city_clubpool.jpg', 'ci
     'school_road.jpg', 'school_road_ni.jpg', 'school_road_ss.jpg', 'school_roof.jpg', 'school_roof_blurred.jpg', 'school_roof_ni.jpg', 'school_room32.jpg', 'school_room34.jpg', 'school_room34_ni.jpg', 'school_scienceroom.jpg', 'school_sportsstoreext.jpg', 'school_sportsstoreroom.jpg', 'school_staircase1.jpg', 'school_staircase2.jpg', 'school_stalls1.jpg',
     'school_stalls1_ni.jpg', 'school_stalls1_ss.jpg', 'school_stalls2.jpg', 'school_stalls2_ni.jpg', 'school_stalls2_ss.jpg', 'school_track.jpg', 'school_track_ni.jpg', 'school_track_on.jpg', 'school_track_on_ni.jpg', 'school_track_running.jpg', 'school_track_running_ni.jpg', 'shizu_fishing.jpg', 'shizu_fishing_ss.jpg', 'shizu_garden.jpg', 'shizu_guesthisao.jpg', 'shizu_houseext.jpg', 'shizu_houseext_lights.jpg', 'shizu_houseext_ni.jpg', 'shizu_living.jpg', 'shizu_park.jpg', 'suburb_konbiniext.jpg', 'suburb_konbiniext_ni.jpg', 'suburb_konbiniext_ss.jpg', 'suburb_konbiniint.jpg', 'suburb_park.jpg', 'suburb_park_ss.jpg', 'suburb_roadcenter.jpg', 'suburb_roadcenter_ni.jpg', 'suburb_roadcenter_ss.jpg', 'suburb_shanghaiext.jpg', 'suburb_shanghaiext_ni.jpg', 'suburb_shanghaiint.jpg', 'suburb_tanabata.jpg', 'suburb_tanabata_ni.jpg'];
 var img_id = 0;
-const IMG_PATH = "../img/bgs/";
+const IMG_PATH = "img/bgs/";
 
 function set_bg() {
     let bg_path = IMG_PATH + images_arr[img_id];
