@@ -11,9 +11,14 @@ implement videos
 implement saves
 implement choices
 
+figure out how choices jump
 
 
 less important
+
+colors for names
+
+improve backwards (bg change, sprite change, use a stack)
 
 improve script parser
 implement custom positions for sprites
