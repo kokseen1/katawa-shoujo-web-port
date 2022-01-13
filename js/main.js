@@ -1,34 +1,195 @@
-var images_arr = ['city_alley.jpg', 'city_clubint.jpg', 'city_clubpool.jpg', 'city_graveyard.jpg', 'city_karaokeext.jpg', 'city_karaokeint.jpg', 'city_othello.jpg', 'city_restaurant.jpg', 'city_station.jpg', 'city_street1.jpg', 'city_street1_blurred.jpg', 'city_street2.jpg', 'city_street2_ni.jpg', 'city_street3.jpg', 'city_street3_ni.jpg', 'city_street4.jpg', 'city_street4_ni.jpg', 'emi_dining.jpg', 'emi_houseext.jpg', 'emi_kitchen.jpg', 'gallery_atelier.jpg', 'gallery_exhibition.jpg', 'gallery_ext.jpg', 'gallery_int.jpg', 'gallery_staircase.jpg', 'hok_bath.jpg', 'hok_houseext.jpg', 'hok_kitchen.jpg', 'hok_lounge.jpg', 'hok_lounge_ni.jpg', 'hok_road.jpg', 'hok_wheat.jpg', 'hosp_ceiling.jpg', 'hosp_ext.jpg', 'hosp_room.jpg', 'hosp_room2.jpg', 'lilly_hilltop.jpg', 'misc_ceiling.jpg', 'misc_ceiling_blur.jpg', 'misc_sky.jpg', 'misc_sky_ni.jpg', 'misc_sky_rays.jpg', 'misc_sky_rn.jpg', 'misc_sky_ss.jpg', 'op_snowywoods.jpg', 'school_backexit.jpg', 'school_cafeteria.jpg', 'school_classroomart.jpg', 'school_council.jpg', 'school_council_ni.jpg', 'school_council_ss.jpg',
-    'school_courtyard.jpg', 'school_courtyard_ni.jpg', 'school_courtyard_ss.jpg', 'school_dormbathroom.jpg', 'school_dormemi.jpg', 'school_dormext.jpg', 'school_dormext_full.jpg', 'school_dormext_full_ni.jpg', 'school_dormext_full_ss.jpg', 'school_dormext_half.jpg', 'school_dormext_half_ni.jpg', 'school_dormext_half_ss.jpg', 'school_dormext_start.jpg', 'school_dormext_start_ni.jpg', 'school_dormext_start_ss.jpg', 'school_dormhallground.jpg', 'school_dormhallway.jpg', 'school_dormhanako.jpg', 'school_dormhisao.jpg', 'school_dormhisao_blurred.jpg', 'school_dormhisao_blurred_ni.jpg', 'school_dormhisao_blurred_ss.jpg', 'school_dormhisao_ni.jpg', 'school_dormhisao_ss.jpg', 'school_dormlilly.jpg', 'school_dormrin.jpg', 'school_forest1.jpg', 'school_forest2.jpg', 'school_forestclearing.jpg', 'school_gardens.jpg', 'school_gardens2.jpg', 'school_gardens2_ni.jpg', 'school_gardens_ni.jpg', 'school_gate.jpg', 'school_gate_ni.jpg', 'school_gate_ss.jpg', 'school_girlsdormhall.jpg', 'school_hallway2.jpg', 'school_hallway3.jpg', 'school_hallway3_blurred.jpg', 'school_hilltop_border.jpg', 'school_hilltop_border_summer.jpg', 'school_hilltop_spring.jpg', 'school_hilltop_summer.jpg', 'school_library.jpg', 'school_library_ss.jpg', 'school_lobby.jpg', 'school_miyagi.jpg', 'school_miyagi_blurred.jpg', 'school_miyagi_ss.jpg', 'school_nomiya.jpg', 'school_nursehall.jpg', 'school_nurseoffice.jpg', 'school_parkinglot.jpg',
-    'school_road.jpg', 'school_road_ni.jpg', 'school_road_ss.jpg', 'school_roof.jpg', 'school_roof_blurred.jpg', 'school_roof_ni.jpg', 'school_room32.jpg', 'school_room34.jpg', 'school_room34_ni.jpg', 'school_scienceroom.jpg', 'school_sportsstoreext.jpg', 'school_sportsstoreroom.jpg', 'school_staircase1.jpg', 'school_staircase2.jpg', 'school_stalls1.jpg',
-    'school_stalls1_ni.jpg', 'school_stalls1_ss.jpg', 'school_stalls2.jpg', 'school_stalls2_ni.jpg', 'school_stalls2_ss.jpg', 'school_track.jpg', 'school_track_ni.jpg', 'school_track_on.jpg', 'school_track_on_ni.jpg', 'school_track_running.jpg', 'school_track_running_ni.jpg', 'shizu_fishing.jpg', 'shizu_fishing_ss.jpg', 'shizu_garden.jpg', 'shizu_guesthisao.jpg', 'shizu_houseext.jpg', 'shizu_houseext_lights.jpg', 'shizu_houseext_ni.jpg', 'shizu_living.jpg', 'shizu_park.jpg', 'suburb_konbiniext.jpg', 'suburb_konbiniext_ni.jpg', 'suburb_konbiniext_ss.jpg', 'suburb_konbiniint.jpg', 'suburb_park.jpg', 'suburb_park_ss.jpg', 'suburb_roadcenter.jpg', 'suburb_roadcenter_ni.jpg', 'suburb_roadcenter_ss.jpg', 'suburb_shanghaiext.jpg', 'suburb_shanghaiext_ni.jpg', 'suburb_shanghaiint.jpg', 'suburb_tanabata.jpg', 'suburb_tanabata_ni.jpg'];
-var img_id = 0;
-const BASE_URL = window.location.href;
-const IMG_PATH = BASE_URL + "img/";
+var BASE_URL = window.location.href;
+if (!BASE_URL.includes("ks-web-client")) BASE_URL = "";
+const ASSETS_PATH = BASE_URL + "assets/";
 
-function set_bg() {
-    let bg_path = IMG_PATH + "bgs/" + images_arr[img_id];
+var curr_line_no = -1;
+var curr_script_name = ASSETS_PATH + "script/script-a1-monday.rpy";
+var script_content;
+var name_mappings;
+
+const bgm_obj = new Audio();
+bgm_obj.loop = true;
+const sfx_obj = new Audio();
+var sprite_dict = {};
+
+function set_bg(bg_name) {
+    let bg_path = ASSETS_PATH + "bgs/" + bg_name;
     $('body').css('background-image', 'url(' + bg_path + ')');
 }
 
-document.onkeydown = function (e) {
-    switch (e.which) {
-        case 37: // left
-            img_id -= 1;
-            set_bg();
+function prev_line() {
+    if (curr_line_no < 0) return;
+    curr_line_no -= 1;
+    parse_line(back = true);
+}
 
-        case 38: // up
-            break;
+function next_line() {
+    curr_line_no += 1;
+    parse_line();
+}
 
-        case 39: // right
-            img_id += 1;
-            set_bg();
-
-
-        case 40: // down
-            break;
-
-        default: return; // exit this handler for other keys
+function set_bgm(bgm_name = null) {
+    if (!bgm_name) {
+        bgm_obj.pause();
+    } else {
+        bgm_obj.src = `/bgm/${bgm_name}`;
+        bgm_obj.play();
     }
-    e.preventDefault(); // prevent the default action (scroll / move caret)
-};
+}
+
+function set_sprite(sprite_arr) {
+    // support more fixed pos in future, dynamic pos not supported
+    const avail_pos = ["conter", "twoleft", "tworight"]
+    let short = sprite_arr[0];
+    if (short.endsWith(":")) short = short.slice(0, -1);
+    let sprite_name = short.split(" ")[0];
+    let pos = "center";
+    if (sprite_arr.length > 1 && avail_pos.includes(sprite_arr[1])) {
+        // position specified
+        pos = sprite_arr[1];
+    } else {
+        let sprite_var = sprite_dict[sprite_name];
+        // sprite already on screen, update
+        if (sprite_var) {
+            $(sprite_var).css("background-image", `url("/sprites/${short}")`);
+            $(sprite_var).show();
+            return;
+        }
+    }
+    let sprite_var = $(`#sprite-${pos}`).css("background-image", `url("/sprites/${short}")`);
+    $(sprite_var).show();
+    sprite_dict[sprite_name] = sprite_var;
+}
+
+function hide_sprite(sprite_name) {
+    let sprite_var = sprite_dict[sprite_name];
+    $(sprite_var).hide();
+}
+
+function clear_sprites() {
+    let sprite_vars = $.map(sprite_dict, function (value, key) { return value });
+    sprite_vars.forEach(sprite_var => {
+        $(sprite_var).hide();
+    });
+}
+
+
+function play_sfx(sfx_name) {
+    sfx_obj.src = ASSETS_PATH + "sfx/" + sfx_name;
+    sfx_obj.play();
+}
+
+function loadFile(filePath) {
+    var result = null;
+    var xmlhttp = new XMLHttpRequest();
+    xmlhttp.open("GET", filePath, false);
+    xmlhttp.send();
+    if (xmlhttp.status == 200) {
+        result = xmlhttp.responseText;
+    }
+    return result;
+}
+
+// Parse the current line
+function parse_line(back = false) {
+    console.log(loadFile(curr_script_name));
+    play_sfx("alarm.ogg");
+    let curr_line = curr_script[curr_line_no];
+    console.log(curr_line)
+    if (curr_line.slice(-1) == '"') {
+        // manual lines (dialog)
+        show_dialog(curr_line)
+    }
+    else {
+        // auto next line (sounds, bg etc)
+        if (curr_line.startsWith("scene bg ")) {
+            set_bg(curr_line.split(" ")[2]);
+        } else if (curr_line.startsWith("label ")) {
+            // new label
+            clear_sprites();
+        } else if (curr_line.startsWith("stop music")) {
+            set_bgm();
+        } else if (curr_line.startsWith("scene ")) {
+            set_img(curr_line.slice(6));
+        }
+        else if (curr_line.startsWith("hide ")) {
+            hide_sprite(curr_line.slice(5));
+        }
+        else if (curr_line.startsWith("show ")) {
+            set_sprite(curr_line.slice(5).split(" at "));
+        }
+        else if (curr_line.startsWith("play music music_")) {
+            set_bgm(curr_line.split(" ")[2].slice(6));
+        }
+        else if (curr_line.startsWith("play sound sfx_")) {
+            play_sfx(curr_line.split(" ")[2].slice(4));
+        }
+        if (back) curr_line_no -= 1;
+        else curr_line_no += 1;
+        parse_line(back);
+    }
+}
+
+function show_dialog(curr_line) {
+    let line_splitted = curr_line.split(" ");
+    let short = line_splitted[0];
+    let mapped_name = name_mappings[short];
+    if (mapped_name !== undefined) {
+        $("#heading-div").text(mapped_name);
+        line_splitted.shift();
+        main_text = line_splitted.join(" ");
+    } else if (short[0] == '"' && short.at(-1) == '"' && line_splitted.length > 1) {
+        $("#heading-div").text(short.slice(1, -1));
+        line_splitted.shift();
+        main_text = line_splitted.join(" ");
+    }
+    else {
+        $("#heading-div").text("");
+        main_text = curr_line;
+    }
+    main_text = main_text.replace(/(\\r\\n|\\n|\\r)/gm, "");
+    main_text = main_text.replace(/{(.*?)}/gm, "");
+    $("#text-div").text(main_text.slice(1, -1));
+}
+
+// Hold Ctrl to skip
+$(document).keydown(function (event) {
+    if (!event.ctrlKey) return;
+    event.preventDefault();
+    next_line();
+});
+
+// Click to go to next line
+$(document).click(function (e) {
+    if ($(e.target).closest(".btn").length > 0) {
+        return false;
+    }
+    next_line();
+});
+
+// Scroll up/down to go back/forward
+$(window).bind('mousewheel', function (event) {
+    if (event.originalEvent.wheelDelta >= 0) {
+        prev_line();
+    } else {
+        next_line();
+    }
+});
+
+$(document).ready(function () {
+    // Initialize assets with dynamic URL that cannot be statically set in CSS.
+    $('#dialog-box').css('background-image', 'url(' + ASSETS_PATH + 'ui/bg-say.png' + ')');
+    $('#bg').css('background-image', 'url(' + ASSETS_PATH + 'ui/main/bg-main.png' + ')');
+
+    // $.get('/get_script', {}, function (data) {
+    //     curr_script = data;
+    // });
+
+    // $.get('/get_init', {}, function (data) {
+    //     name_mappings = data.name_mappings;
+
+    //     $("#back-btn").click(prev_line);
+    //     $("#fwd-btn").click(next_line);
+    // });
+
+});
