@@ -1,0 +1,20 @@
+
+bgs might have different names when called in script vs actual filenames.
+const dict mappings should be in separate file.
+
+
+
+
+implement effects
+implement videos
+
+implement saves
+implement choices
+
+
+
+less important
+
+improve script parser
+implement custom positions for sprites
+sprite scaling has issues (big sprites are not aligned to bottom)
