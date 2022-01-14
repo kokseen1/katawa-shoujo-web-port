@@ -14,7 +14,12 @@ const sfx_obj = new Audio();
 var active_sprites_dict = {};
 
 function set_bg(bg_name) {
-    let bg_path = ASSETS_PATH + "bgs/" + bg_name + ".jpg";
+    if (bg_name.endsWith(":")) bg_name = bg_name.slice(0, -1);
+    let bg_filename = scene_mappings["bg " + bg_name];
+    console.log(bg_name)
+    console.log(bg_filename)
+    if (!bg_filename) bg_filename = "bgs/" + bg_name + ".jpg";
+    let bg_path = ASSETS_PATH + bg_filename;
     $('#bg').css('background-image', 'url(' + bg_path + ')');
     clear_sprites();
 }
@@ -84,7 +89,7 @@ function set_sprite(sprite_arr) {
     console.log("pos", pos)
     console.log("existing_sprite_moved", existing_sprite_moved)
     // Hide old sprite position 
-    if (existing_sprite_moved) $(sprite_var).fadeOut();
+    if (existing_sprite_moved) $(sprite_var).hide();
     if (!sprite_var || existing_sprite_moved) sprite_var = $(`#sprite-${pos}`);
 
     // Adjust size for large close sprites
@@ -93,13 +98,13 @@ function set_sprite(sprite_arr) {
 
     active_sprites_dict[sprite_char_name] = sprite_var;
     $(sprite_var).css("background-image", "url(" + ASSETS_PATH + sprite_filename + ")");
-    $(sprite_var).fadeIn();
+    $(sprite_var).show();
 }
 
 function hide_sprite(sprite_char_name) {
     if (sprite_char_name.endsWith(":")) sprite_char_name = sprite_char_name.slice(0, -1);
     let sprite_var = active_sprites_dict[sprite_char_name];
-    $(sprite_var).fadeOut();
+    $(sprite_var).hide();
 }
 
 function clear_sprites() {
@@ -355,12 +360,13 @@ $(document).ready(function () {
     $('#bg').css('background-image', 'url(' + ASSETS_PATH + 'ui/main/bg-main.png' + ')');
 
     // Load initial script and create array
-    load_script(common_route_script_names[0]);
+    load_script(common_route_script_names[3]);
 
     // Cache sprites
     for (var key in sprite_mappings) {
         sprite_filename = sprite_mappings[key];
         $("#cache").css("background-image", "url(" + ASSETS_PATH + sprite_filename + ")");
+        $("#cache").remove();
     }
 
     // $.get('/get_init', {}, function (data) {
