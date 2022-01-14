@@ -360,7 +360,7 @@ $(document).ready(function () {
     $('#bg').css('background-image', 'url(' + ASSETS_PATH + 'ui/main/bg-main.png' + ')');
 
     // Load initial script and create array
-    load_script(common_route_script_names[3]);
+    load_script(common_route_script_names[0]);
 
     // Cache sprites
     for (var key in sprite_mappings) {
