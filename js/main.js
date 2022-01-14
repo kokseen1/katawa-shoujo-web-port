@@ -202,7 +202,7 @@ async function parse_line(back = false) {
             let pause_dur = parseFloat(curr_line.slice(-4, -1));
             await new Promise(r => setTimeout(r, pause_dur * 1000));
         } else if (curr_line.startsWith("with charachange")) {
-            await new Promise(r => setTimeout(r, 150));
+            await new Promise(r => setTimeout(r, 100));
         }
         else if (curr_line.startsWith("with Dissolve")) {
             $("#vfx").fadeOut();
@@ -357,6 +357,12 @@ $(document).ready(function () {
 
     // Load initial script and create array
     load_script(common_route_script_names[0]);
+
+    // Cache sprites
+    for (var key in sprite_mappings) {
+        sprite_filename = sprite_mappings[key];
+        $("#cache").css("background-image", "url(" + ASSETS_PATH + sprite_filename + ")");
+    }
 
     // $.get('/get_init', {}, function (data) {
     //     name_mappings = data.name_mappings;
