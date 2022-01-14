@@ -321,7 +321,6 @@ $(document).keydown(function (event) {
     } else if (event.key == "l") {
         quick_load();
     }
-    event.preventDefault();
 });
 
 // Click to go to next line
