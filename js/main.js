@@ -3,7 +3,6 @@ if (!BASE_URL.includes("ks-web-client")) BASE_URL = "";
 const ASSETS_PATH = BASE_URL + "assets/";
 
 var curr_line_no = -1;
-var curr_common_route_script_no = 0;
 var curr_script_name;
 var common_route_script_names = ['script-a1-monday', 'script-a1-tuesday', 'script-a1-wednesday', 'script-a1-thursday', 'script-a1-friday', 'script-a1-saturday', 'script-a1-sunday']
 var curr_script_content_arr = [];
@@ -12,11 +11,12 @@ var awaiting_choice = false;
 const bgm_obj = new Audio();
 bgm_obj.loop = true;
 const sfx_obj = new Audio();
-var sprite_dict = {};
+var active_sprites_dict = {};
 
 function set_bg(bg_name) {
     let bg_path = ASSETS_PATH + "bgs/" + bg_name + ".jpg";
     $('#bg').css('background-image', 'url(' + bg_path + ')');
+    clear_sprites();
 }
 
 function prev_line() {
@@ -24,7 +24,6 @@ function prev_line() {
         $("#choices-div").empty();
         awaiting_choice = false;
     }
-    if (curr_line_no < 0) return;
     curr_line_no -= 1;
     parse_line(back = true);
 }
@@ -35,18 +34,24 @@ function next_line() {
     parse_line();
 }
 
-function set_scene(scene_name) {
+function set_scene(scene_name, vfx = false) {
     scene_filename_full = scene_mappings[scene_name];
     if (!scene_filename_full) return;
-    scene_filename = scene_filename_full.match(/"(.+.jpg)"/)[1]
+    scene_filename_matches = scene_filename_full.match(/"((.+)\.(jpg|png))"/);
+    if (!scene_filename_matches) return;
+    scene_filename = scene_filename_matches[1];
     let scene_path = ASSETS_PATH + scene_filename;
-    $('#bg').css('background-image', 'url(' + scene_path + ')');
+    if (vfx) {
+        active_sprites_dict[scene_name] = $('#vfx').css('background-image', 'url(' + scene_path + ')');
+        $('#vfx').fadeIn();
+    }
+    else $('#bg').css('background-image', 'url(' + scene_path + ')');
 }
 
 function set_bgm(bgm_name = null) {
-    if (!bgm_name) {
-        bgm_obj.pause();
-    } else {
+    // Pause current bgm if none speficied
+    if (!bgm_name) bgm_obj.pause();
+    else {
         bgm_filename = bgm_mappings[bgm_name];
         bgm_obj.src = ASSETS_PATH + "bgm/" + bgm_filename + ".ogg";
         bgm_obj.play();
@@ -54,36 +59,51 @@ function set_bgm(bgm_name = null) {
 }
 
 function set_sprite(sprite_arr) {
+    // sprite_arr = ["sprite_name", "pos"]
     // support more fixed pos in future, dynamic pos not supported
-    const avail_pos = ["conter", "twoleft", "tworight"]
-    let short = sprite_arr[0];
-    if (short.endsWith(":")) short = short.slice(0, -1);
-    let sprite_name = short.split(" ")[0];
-    let pos = "center";
-    if (sprite_arr.length > 1 && avail_pos.includes(sprite_arr[1])) {
-        // position specified
-        pos = sprite_arr[1];
-    } else {
-        let sprite_var = sprite_dict[sprite_name];
-        // sprite already on screen, update
-        if (sprite_var) {
-            $(sprite_var).css("background-image", "url(" + ASSETS_PATH + sprite_mappings[short] + ")");
-            $(sprite_var).show();
-            return;
-        }
+    const avail_pos = ["center", "twoleft", "tworight"]
+    let sprite_name = sprite_arr[0];
+    if (sprite_name.endsWith(":")) sprite_name = sprite_name.slice(0, -1);
+    let sprite_filename = sprite_mappings[sprite_name];
+    if (!sprite_filename) return;
+
+    // keep character name and store in active_sprites_dict for sprite hiding later
+    let sprite_char_name = sprite_name.split(" ")[0];
+    let sprite_var = active_sprites_dict[sprite_char_name];
+    let existing_sprite_pos = $(sprite_var).data("pos");
+
+    // if no pos or invalid pos specified, use center
+    let pos = sprite_arr[1];
+    if (!avail_pos.includes(pos)) {
+        if (existing_sprite_pos) pos = existing_sprite_pos;
+        else pos = "center";
     }
-    let sprite_var = $(`#sprite-${pos}`).css("background-image", "url(" + ASSETS_PATH + sprite_mappings[short] + ")");
-    $(sprite_var).show();
-    sprite_dict[sprite_name] = sprite_var;
+    // character sprite already on screen, update
+
+    let existing_sprite_moved = !(existing_sprite_pos == pos);
+    console.log("pos", pos)
+    console.log("existing_sprite_moved", existing_sprite_moved)
+    // Hide old sprite position 
+    if (existing_sprite_moved) $(sprite_var).fadeOut();
+    if (!sprite_var || existing_sprite_moved) sprite_var = $(`#sprite-${pos}`);
+
+    // Adjust size for large close sprites
+    if (sprite_filename.includes("/close/")) $(sprite_var).css("background-size", "cover");
+    else $(sprite_var).css("background-size", "contain");
+
+    active_sprites_dict[sprite_char_name] = sprite_var;
+    $(sprite_var).css("background-image", "url(" + ASSETS_PATH + sprite_filename + ")");
+    $(sprite_var).fadeIn();
 }
 
-function hide_sprite(sprite_name) {
-    let sprite_var = sprite_dict[sprite_name];
-    $(sprite_var).hide();
+function hide_sprite(sprite_char_name) {
+    if (sprite_char_name.endsWith(":")) sprite_char_name = sprite_char_name.slice(0, -1);
+    let sprite_var = active_sprites_dict[sprite_char_name];
+    $(sprite_var).fadeOut();
 }
 
 function clear_sprites() {
-    let sprite_vars = $.map(sprite_dict, function (value, key) { return value });
+    let sprite_vars = $.map(active_sprites_dict, function (value, key) { return value });
     sprite_vars.forEach(sprite_var => {
         $(sprite_var).hide();
     });
@@ -96,10 +116,10 @@ function play_sfx(sfx_name) {
     sfx_obj.play();
 }
 
-function loadFile(filePath) {
+function load_file(file_path) {
     var result = null;
     var xmlhttp = new XMLHttpRequest();
-    xmlhttp.open("GET", filePath, false);
+    xmlhttp.open("GET", file_path, false);
     xmlhttp.send();
     if (xmlhttp.status == 200) {
         result = xmlhttp.responseText;
@@ -134,11 +154,34 @@ function show_choice(choice_name) {
     console.log(choice_mappings)
 }
 
+function special_func(func_raw) {
+    const RE_WRITTEN_NOTE = /written_note\((.?)(?<text>".+?").*?(text_args=(?<text_args>.+))?\)/gm;
+    let written_note_content = RE_WRITTEN_NOTE.exec(func_raw);
+    if (written_note_content) {
+        text = written_note_content.groups.text;
+        text_args = written_note_content.groups.text_args;
+        if (text_args) {
+            // format text
+        }
+        text = text.replace(/(\\r\\n|\\n|\\r)/gm, " ");
+        show_dialog(text);
+        return true;
+    }
+}
+
+
 // Parse the current line
-function parse_line(back = false) {
-    // Go to next common route script
+async function parse_line(back = false) {
+    if (curr_line_no < 0) {
+        curr_line_no = 0;
+        return;
+    }
+    // Go to next common route script when reaching the end
     if (curr_line_no == curr_script_content_arr.length) {
-        curr_common_route_script_no += 1;
+        console.log(curr_script_name)
+        console.log(common_route_script_names.indexOf(curr_script_name))
+        let curr_common_route_script_no = common_route_script_names.indexOf(curr_script_name) + 1;
+        console.log(curr_common_route_script_no)
         load_script(common_route_script_names[curr_common_route_script_no]);
         curr_line_no = 0;
     }
@@ -154,11 +197,24 @@ function parse_line(back = false) {
         if (curr_line.startsWith("label en_choice") && !back) {
             show_choice(curr_line.slice(15, -1));
             return;
-        } else if (curr_line.startsWith("scene bg ")) {
+        }
+        else if (curr_line.startsWith("with Pause(")) {
+            let pause_dur = parseFloat(curr_line.slice(-4, -1));
+            await new Promise(r => setTimeout(r, pause_dur * 1000));
+        } else if (curr_line.startsWith("with charachange")) {
+            await new Promise(r => setTimeout(r, 150));
+        }
+        else if (curr_line.startsWith("with Dissolve")) {
+            $("#vfx").fadeOut();
+        } else if (curr_line.startsWith("scene bg ") || curr_line.startsWith("show bg ")) {
             set_bg(curr_line.split(" ")[2]);
         } else if (curr_line.startsWith("label ")) {
-            // new label
-            clear_sprites();
+            // new label NEED TO FIX
+            // clear_sprites();
+        } else if (curr_line.startsWith("$ ")) {
+            // Wait for click if special func valid
+            let ret = special_func(curr_line);
+            if (ret) return;
         } else if (curr_line.startsWith("stop music")) {
             set_bgm();
         } else if (curr_line.startsWith("scene ")) {
@@ -168,7 +224,13 @@ function parse_line(back = false) {
             hide_sprite(curr_line.slice(5));
         }
         else if (curr_line.startsWith("show ")) {
-            set_sprite(curr_line.slice(5).split(" at "));
+            let resource_name = curr_line.slice(5);
+            if (resource_name.endsWith(":")) resource_name = resource_name.slice(0, -1);
+            if (resource_name in scene_mappings) {
+                set_scene(resource_name, vfx = true);
+            }
+            // For showing sprites
+            else set_sprite(resource_name.split(" at "));
         }
         else if (curr_line.startsWith("play music music_")) {
             set_bgm(curr_line.split(" ")[2].slice(6));
@@ -189,11 +251,18 @@ function show_dialog(curr_line) {
     let line_splitted = curr_line.split(" ");
     let short = line_splitted[0];
     let mapped_name = name_mappings[short];
+
+    let name_color = name_color_mappings[short];
+    if (!name_color) name_color = "#FFFFFF";
+    $("#heading-div").css("color", name_color);
+
     if (mapped_name !== undefined) {
+        // Names using variables eg. hi
         $("#heading-div").text(mapped_name);
         line_splitted.shift();
         main_text = line_splitted.join(" ");
     } else if (short[0] == '"' && short.at(-1) == '"' && line_splitted.length > 1) {
+        // hardcoded names, not a variable
         $("#heading-div").text(short.slice(1, -1));
         line_splitted.shift();
         main_text = line_splitted.join(" ");
@@ -203,26 +272,56 @@ function show_dialog(curr_line) {
         monologue = true;
         main_text = curr_line;
     }
+    // Remove NVL fullscreen text formatting newlines
     main_text = main_text.replace(/(\\r\\n|\\n|\\r)/gm, "");
+    // Remove text effects (mi_shi "It's nice to meet you, too!{w=0.5} But~!")
     main_text = main_text.replace(/{(.*?)}/gm, "");
+    // Remove quotes for monologues
     if (monologue) main_text = main_text.slice(1, -1);
     $("#text-div").text(main_text);
 }
 
 function load_script(script_name) {
     let script_path = ASSETS_PATH + "script/" + script_name + ".rpy";
-    let splitted = loadFile(script_path).split(/\r?\n/);
+    let splitted = load_file(script_path).split(/\r?\n/);
+    // Remove empty lines and strip whitespaces from all lines
     splitted = splitted.filter(n => n);
     curr_script_content_arr = splitted.map(element => {
         return element.trim();
     });
+    curr_script_name = script_name;
+}
+
+function quick_save() {
+    let save_data = {
+        curr_script_name: curr_script_name,
+        curr_line_no: curr_line_no,
+    }
+    Cookies.set("save_data", JSON.stringify(save_data), { expires: 365 });
+}
+
+function quick_load() {
+    let save_data_raw = Cookies.get("save_data");
+    if (!save_data_raw) {
+        alert("No save data.")
+        return;
+    }
+    let save_data = JSON.parse(save_data_raw);
+    curr_script_name = save_data.curr_script_name;
+    curr_line_no = save_data.curr_line_no;
+    parse_line();
 }
 
 // Hold Ctrl to skip
 $(document).keydown(function (event) {
-    if (!event.ctrlKey) return;
+    if (event.ctrlKey) {
+        next_line();
+    } else if (event.key == "s") {
+        quick_save();
+    } else if (event.key == "l") {
+        quick_load();
+    }
     event.preventDefault();
-    next_line();
 });
 
 // Click to go to next line
@@ -257,7 +356,7 @@ $(document).ready(function () {
     $('#bg').css('background-image', 'url(' + ASSETS_PATH + 'ui/main/bg-main.png' + ')');
 
     // Load initial script and create array
-    load_script(common_route_script_names[curr_common_route_script_no]);
+    load_script(common_route_script_names[0]);
 
     // $.get('/get_init', {}, function (data) {
     //     name_mappings = data.name_mappings;
@@ -309,7 +408,9 @@ var name_mappings = {
     "yu_": "Librarian"
 };
 
-
+var name_color_mappings = {
+    'hi': '#629276', 'hi_': '#629276', 'ha': '#897CBF', 'ha_': '#897CBF', 'emi': '#FF8D7C', 'emi_': '#FF8D7C', 'rin': '#b14343', 'rin_': '#b14343', 'li': '#F9EAA0', 'li_': '#F9EAA0', 'shi': '#72ADEE', 'shi_': '#72ADEE', 'mi': '#FF809F', 'mi_': '#FF809F', 'mi_shi': '#FF809F', 'mi_shi_': '#FF809F', 'ke': '#CC7C2A', 'ke_': '#CC7C2A', 'mu': '#FFFFFF', 'mu_': '#FFFFFF', 'nk': '#FFFFFF', 'nk_': '#FFFFFF', 'no': '#E0E0E0', 'no_': '#E0E0E0', 'yu': '#2c9e31', 'yu_': '#2c9e31', 'sa': '#D4D4FF', 'sa_': '#D4D4FF', 'aki': '#eb243b', 'aki_': '#eb243b', 'hh': '#6299FF', 'hh_': '#6299FF', 'hx': '#99AACC', 'hx_': '#99AACC', 'emm': '#995050', 'emm_': '#995050', 'sk': '#7187A8', 'sk_': '#7187A8', 'mk': '#AD735E', 'mk_': '#AD735E'
+}
 var sfx_mappings = { 'tcard': 'tcard', '4lslogo': '4lsaudiologo', 'alarmclock': 'alarm', 'normalbell': 'carillon', 'warningbell': 'chaimu', 'crunchydeath': 'crunch', 'fireworks': 'fireworks', 'rain': 'rain', 'rustling': 'rustling', 'impact': 'wumph', 'impact2': 'wumph_2', 'heartfast': 'heart_single_fast', 'heartslow': 'heart_single_slow', 'heartstop': 'heart_stop', 'emijogging': 'emijogging', 'emirunning': 'emirunning', 'emipacing': 'emipacing', 'emisprinting': 'emisprinting', 'startpistol': 'startpistol', 'crowd_indoors': 'crowd_indoors', 'crowd_outdoors': 'crowd_outdoors', 'crowd_cheer': 'crowd_cheer', 'doorknock': 'doorknock', 'doorknock2': 'doorknock2', 'doorslam': 'doorslam', 'doorclose': 'doorclose', 'cicadas': 'cicadas', 'scratch': 'scratch', 'traffic': 'traffic', 'rumble': 'rumble', 'skid': 'skid2', 'gymbounce': 'emibounce', 'hammer': 'hammer', 'paper': 'paper', 'birdstakeoff': 'birdstakeoff', 'storebell': 'storebell', 'thunder': 'thunder', 'slide': 'slide', 'slide2': 'slide2', 'draw': 'sword_draw', 'shower': 'shower', 'switch': 'switch', 'pillow': 'pillow', 'cellphone': 'cellphone', 'door_creak': 'door_creak', 'dooropen': 'dooropen', 'dropglasses': 'dropglasses', 'can': 'can', 'stallbuilding': 'stallbuilding', 'parkambience': 'parkambience', 'trainint': 'trainint', 'footsteps_hard': 'footsteps_hard', 'footsteps_soft': 'footsteps_soft', 'paperruffling': 'paperruffling', 'rooftop': 'rooftop', 'lighter': 'lighter', 'phone': 'phone', 'hollowclick': 'hollowclick', 'businterior': 'businterior', 'teacup': 'teacup', 'can_clatter': 'can_clatter', 'snap': 'snap', 'billiards_break': 'billiards_break', 'billiards': 'billiards', 'lock': 'lock', 'dropstuff': 'dropstuff', 'camera': 'camera', 'time': 'time', 'flash': 'flash', 'whiteout': 'whiteout' }
 
 

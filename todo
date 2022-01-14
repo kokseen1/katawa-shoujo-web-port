@@ -3,9 +3,18 @@ bgs might have different names when called in script vs actual filenames.
 const dict mappings should be in separate file.
 
 
+for choices:
+m1 maps to en_A1a
+m2 maps to en_A1b
+
+both leads to en_A1c
 
 
-implement effects
+implement effects stuff like show snow, scene black/white
+effects like adeout etc.
+
+add fade delay to sprite changes  
+
 implement videos
 
 implement saves
