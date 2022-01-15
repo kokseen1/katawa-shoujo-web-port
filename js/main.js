@@ -7,11 +7,17 @@ var curr_script_name;
 var common_route_script_names = ['script-a1-monday', 'script-a1-tuesday', 'script-a1-wednesday', 'script-a1-thursday', 'script-a1-friday', 'script-a1-saturday', 'script-a1-sunday']
 var curr_script_content_arr = [];
 var awaiting_choice = false;
-
+var curr_sprite_state = {};
 const bgm_obj = new Audio();
 bgm_obj.loop = true;
 const sfx_obj = new Audio();
+var curr_bgm_name;
 var active_sprites_dict = {};
+var current_bg_path;
+
+function set_bg_force(bg_path) {
+    $('#bg').css('background-image', 'url(' + bg_path + ')');
+}
 
 function set_bg(bg_name) {
     if (bg_name.endsWith(":")) bg_name = bg_name.slice(0, -1);
@@ -21,7 +27,8 @@ function set_bg(bg_name) {
     if (!bg_filename) bg_filename = "bgs/" + bg_name + ".jpg";
     let bg_path = ASSETS_PATH + bg_filename;
     $('#bg').css('background-image', 'url(' + bg_path + ')');
-    clear_sprites();
+    // clear_sprites();
+    current_bg_path = bg_path;
 }
 
 function prev_line() {
@@ -50,16 +57,23 @@ function set_scene(scene_name, vfx = false) {
         active_sprites_dict[scene_name] = $('#vfx').css('background-image', 'url(' + scene_path + ')');
         $('#vfx').fadeIn();
     }
-    else $('#bg').css('background-image', 'url(' + scene_path + ')');
+    else {
+        $('#bg').css('background-image', 'url(' + scene_path + ')');
+        current_bg_path = scene_path;
+    }
 }
 
 function set_bgm(bgm_name = null) {
     // Pause current bgm if none speficied
-    if (!bgm_name) bgm_obj.pause();
+    if (!bgm_name) {
+        bgm_obj.pause();
+        curr_bgm_name = null;
+    }
     else {
         bgm_filename = bgm_mappings[bgm_name];
         bgm_obj.src = ASSETS_PATH + "bgm/" + bgm_filename + ".ogg";
         bgm_obj.play();
+        curr_bgm_name = bgm_name;
     }
 }
 
@@ -92,6 +106,7 @@ function set_sprite(sprite_arr) {
     if (existing_sprite_moved) $(sprite_var).hide();
     if (!sprite_var || existing_sprite_moved) sprite_var = $(`#sprite-${pos}`);
 
+
     // Adjust size for large close sprites
     if (sprite_filename.includes("/close/")) $(sprite_var).css("background-size", "cover");
     else $(sprite_var).css("background-size", "contain");
@@ -99,19 +114,25 @@ function set_sprite(sprite_arr) {
     active_sprites_dict[sprite_char_name] = sprite_var;
     $(sprite_var).css("background-image", "url(" + ASSETS_PATH + sprite_filename + ")");
     $(sprite_var).show();
+    curr_sprite_state[pos] = [[sprite_name, pos], sprite_char_name];
 }
 
 function hide_sprite(sprite_char_name) {
     if (sprite_char_name.endsWith(":")) sprite_char_name = sprite_char_name.slice(0, -1);
     let sprite_var = active_sprites_dict[sprite_char_name];
     $(sprite_var).hide();
+    for (var key in curr_sprite_state) {
+        if (curr_sprite_state[key] && curr_sprite_state[key][1] == sprite_char_name) curr_sprite_state[key] = null;
+    }
 }
 
 function clear_sprites() {
+    console.log("clearing sprites")
     let sprite_vars = $.map(active_sprites_dict, function (value, key) { return value });
     sprite_vars.forEach(sprite_var => {
         $(sprite_var).hide();
     });
+    curr_sprite_state = {};
 }
 
 
@@ -202,6 +223,11 @@ async function parse_line(back = false) {
         if (curr_line.startsWith("label en_choice") && !back) {
             show_choice(curr_line.slice(15, -1));
             return;
+        } else if (curr_line.startsWith("window hide")) {
+            $("#vfx").hide()
+            $("#vfx").stop(true, true)
+        } else if (curr_line.startsWith("with locationchange")) {
+            clear_sprites();
         }
         else if (curr_line.startsWith("with Pause(")) {
             let pause_dur = parseFloat(curr_line.slice(-4, -1));
@@ -298,23 +324,56 @@ function load_script(script_name) {
 }
 
 function quick_save() {
+    // let body_content = $("#bg")[0].outerHTML;
     let save_data = {
         curr_script_name: curr_script_name,
         curr_line_no: curr_line_no,
+        curr_bgm_name: curr_bgm_name,
+        curr_sprite_state: curr_sprite_state,
+        current_bg_path: current_bg_path
+        // body_content: body_content
     }
     Cookies.set("save_data", JSON.stringify(save_data), { expires: 365 });
+    console.log(save_data);
 }
 
 function quick_load() {
+
     let save_data_raw = Cookies.get("save_data");
     if (!save_data_raw) {
         alert("No save data.")
         return;
     }
     let save_data = JSON.parse(save_data_raw);
-    curr_script_name = save_data.curr_script_name;
+    load_script(save_data.curr_script_name);
     curr_line_no = save_data.curr_line_no;
+    current_bg_path = save_data.current_bg_path;
+    set_bg_force(current_bg_path);
+    clear_sprites();
+    console.log("load", curr_script_name, curr_line_no, save_data.curr_sprite_state);
+    for (var key in save_data.curr_sprite_state) {
+        console.log(key)
+        console.log(save_data.curr_sprite_state[key])
+        if (save_data.curr_sprite_state[key]) set_sprite(save_data.curr_sprite_state[key][0]);
+    }
+    curr_sprite_state = save_data.curr_sprite_state;
+    set_bgm(save_data.curr_bgm_name);
+    // let body_content = save_data.body_content;
+    // console.log(body_content);
+    // $("#bg").replaceWith(body_content)
     parse_line();
+    set_choice_listener()
+}
+
+function set_choice_listener() {
+    // Choices click listener
+    $('#choices-div').on('click', '.choice-div', function (e) {
+        let jump_label = $(this).data("jump");
+        $("#choices-div").empty();
+        let jump_line_no = curr_script_content_arr.indexOf("label " + jump_label + ":");
+        awaiting_choice = false;
+        curr_line_no = jump_line_no;
+    });
 }
 
 // Hold Ctrl to skip
@@ -330,9 +389,6 @@ $(document).keydown(function (event) {
 
 // Click to go to next line
 $(document).click(function (e) {
-    if ($(e.target).closest(".btn").length > 0) {
-        return false;
-    }
     next_line();
 });
 
@@ -345,14 +401,7 @@ $(window).bind('mousewheel', function (event) {
     }
 });
 
-// Choices click listener
-$('#choices-div').on('click', '.choice-div', function (e) {
-    let jump_label = $(this).data("jump");
-    $("#choices-div").empty();
-    let jump_line_no = curr_script_content_arr.indexOf("label " + jump_label + ":");
-    awaiting_choice = false;
-    curr_line_no = jump_line_no;
-});
+
 
 $(document).ready(function () {
     // Initialize assets with dynamic URL that cannot be statically set in CSS.
@@ -368,7 +417,7 @@ $(document).ready(function () {
         $("#cache").css("background-image", "url(" + ASSETS_PATH + sprite_filename + ")");
         $("#cache").remove();
     }
-
+    set_choice_listener()
     // $.get('/get_init', {}, function (data) {
     //     name_mappings = data.name_mappings;
 
