@@ -32,3 +32,23 @@ improve backwards (bg change, sprite change, use a stack)
 improve script parser
 implement custom positions for sprites
 sprite scaling has issues (big sprites are not aligned to bottom)
+
+below should clear sprite..
+
+836 'scene bg tearoom_lillyhisao_noon'
+main.js:25 tearoom_lillyhisao_noon
+main.js:26 "event/Lilly_supercg/tearoom_lillyhisao_noon.jpg"
+main.js:216 837 'show tearoom_hisao smile'
+main.js:216 838 'show tearoom_lilly smileclosed'
+main.js:216 839 'with fade'
+main.js:216 840 `"As she sets down the tea, I gently take it and have a sip. I'm really more of a coffee person, but this seems like a rather bad moment to bring it up."`
+
+might need to hardcode all the routes.
+
+choices_dict
+{A1: {…}, A3: {…}, A6: {…}, A8: {…}}
+A1: {a: false, b: true}
+A3: {a: true, b: false, c: false}
+A6: {a: false, b: true}
+A8: {a: false, b: true}
+[[Prototype]]: Object
