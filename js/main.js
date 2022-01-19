@@ -18,7 +18,7 @@ const COMMON_ROUTE_SCRIPT_NAMES = ['script-a1-monday', 'script-a1-tuesday', 'scr
 const avail_pos = ["center", "left", "right", "twoleft", "tworight"];
 
 // For jQuery fadeIn and fadeOut functions. Might cause race conditions
-const FADE_SPEED = 0;
+const FADE_SPEED = 50;
 
 // Variables for parsing script
 var curr_line_no = -1;
@@ -34,8 +34,11 @@ var choices_dict = {};
 
 // Determines which labels should be displayed according to choices
 const route_dict = {
+    // Why?
+    // Of course Shizune +1
     "A1a": [["choiceA1", "m1"]],
     "A1b": [["choiceA1", "m2"]],
+
 
     "A2a": [["choiceA1", "m1"]],
     "A2b": [["choiceA1", "m2"]],
@@ -43,13 +46,20 @@ const route_dict = {
     "A2d": [["choiceA1", "m2"]],
     "A2e": [["choiceA1", "m1"]],
 
+    // Library Hanako/Lilly +1
+    // Deafness 
+    // Got everything Shizune +1
     "A3a": [["choiceA3", "m1"]],
     "A3b": [["choiceA3", "m2"]],
     "A3c": [["choiceA3", "m3"]],
 
+    // Attack Shizune +1
+    // Defense
     "A6a": [["choiceA6", "m1"]],
     "A6b": [["choiceA6", "m2"]],
 
+    // Hi
+    // Sorry Lilly/Hanako +1
     "A8a": [["choiceA8", "m1"]],
     "A8aa": [["choiceA8", "m1"], ["choiceA1", "m2"]],
     "A8ab": [["choiceA8", "m1"]],
@@ -57,9 +67,12 @@ const route_dict = {
     "A8d": [["choiceA8", "m1"]],
     "A8e": [["choiceA8", "m2"]],
 
+    // Cute Lilly/Hanako +1
+    // Not cute
     "A9a": [["choiceA9", "m1"]],
     "A9b": [["choiceA9", "m2"]],
 
+    // 
     "A10a": [["choiceA10a", "m1"], ["choiceA10b", "m2"], ["choiceA10c", "m1"], [["hanako", 1, "lt"], ["lilly", 1, "lt"], ["lilly", 1, "lt"]], "||"],
     "A10b": [["choiceA10a", "m2"], ["choiceA10c", "m2"], "||"],
     "A10c": [["choiceA10a", "m3"], ["choiceA10b", "m1"], "||"],
@@ -67,7 +80,43 @@ const route_dict = {
     "choiceA10a": [["hanako", 1], ["lilly", 1], ["shizune", 1]],
     "choiceA10b": [["shizune", 1]],
     "choiceA10c": [["hanako", 1], ["lilly", 1]],
+
+    "A11": [["choiceA10a", "m3"], ["choiceA10b", "m1"], "||"],
+    "A11a": [["choiceA10a", "m3"], ["choiceA10b", "m1"], "||"],
+    "A11b": [["choiceA10a", "m3"], ["choiceA10b", "m1"], "||"],
+    "A11c": [["choiceA10a", "m2"], ["choiceA10c", "m2"], "||"],
+    "A11d": [["choiceA10a", "m2"], ["choiceA10c", "m2"], "||"],
+
+    "A11x": [["choiceA10a", "m3"], ["choiceA10b", "m1"], "||"],
+    "A11y": [["choiceA10a", "m1"], ["choiceA10b", "m2"], ["choiceA10c", "m1"], "||"],
+
+    "A12": [["choiceA10a", "m3"], ["choiceA10b", "m1"], "||"],
+    "A13": [["choiceA10a", "m2"], ["choiceA10c", "m2"], "||"],
 };
+
+// Specifies which routes add/reset affection scores
+const affection_dict = {
+    "choiceA1": { "m2": ["shizune"] },
+    "choiceA3": { "m1": ["hanako", "lilly"], "m3": ["shizune"] },
+    "choiceA6": { "m1": ["shizune"] },
+    "choiceA8": { "m2": ["hanako", "lilly"] },
+    "choiceA9": { "m1": ["hanako", "lilly"] },
+    "choiceA10a": { "m2": ["hanako", "lilly"], "m3": ["shizune"] },
+    "choiceA10b": { "m1": ["shizune"] },
+    "choiceA10c": { "m2": ["hanako", "lilly"] },
+};
+
+const insert_bef_label_dict = {
+    "A11d": "A11a",
+};
+
+const incompatible_labels = {
+    "choiceA10b": "choiceA10a",
+    "choiceA10c": "choiceA10a",
+};
+
+// Variable to store the line no. to return to after a jump
+var ret_loc = 0;
 
 var affection_scores = {};
 
@@ -76,11 +125,6 @@ var bg_stack = [];
 var sprites_stack = [];
 var bgm_stack = [];
 
-const affection_dict = {
-    "choiceA1": { "m2": ["shizune"] },
-    "choiceA3": { "m1": ["hanako", "lilly"] },
-    "choiceA3": { "m3": ["shizune"] },
-};
 
 function calc_score() {
     affection_scores = {
@@ -102,6 +146,7 @@ function calc_score() {
 }
 
 function set_bg_force(bg_path) {
+    console.log("BG", bg_path);
     $('#bg').css('background-image', 'url(' + bg_path + ')');
 }
 
@@ -201,7 +246,6 @@ function set_sprite(sprite_fullname, pos, type = "sprite") {
     if (!sprite_filename) return;
 
     sprite_filename = strip_quotes(sprite_filename);
-    console.log(sprite_fullname, pos, sprite_filename)
 
     let sprite_char_name = sprite_fullname.split(" ")[0];
     let suffixed_char_name = sprite_char_name.split("_")[1];
@@ -232,7 +276,7 @@ function set_sprite(sprite_fullname, pos, type = "sprite") {
         .removeClass()
         .addClass(`${type} pos-${pos} ${sprite_char_name}`);
     $(target_sprite).fadeInFixed();
-    console.log("position at", pos, sprite_char_name);
+    console.log("POSITION", pos, sprite_char_name, sprite_filename, sprite_fullname);
 }
 
 jQuery.fn.fadeOutAndRemove = function (speed = FADE_SPEED) {
@@ -245,10 +289,10 @@ jQuery.fn.fadeInFixed = function (speed = FADE_SPEED) {
     $(this).fadeIn(speed);
 }
 
-function hide_sprite(sprite_char_name) {
-    sprite_char_name = sprite_char_name.split(" ")[0];
+function hide_sprite(sprite_char_name_full) {
+    sprite_char_name = sprite_char_name_full.split(" ")[0];
     let old_sprite = $("#bg").find(`.${sprite_char_name}`);
-    console.log("removing", sprite_char_name);
+    console.log("REMOVE", sprite_char_name, sprite_char_name_full);
     $(old_sprite).fadeOutAndRemove();
 }
 
@@ -365,7 +409,6 @@ function restore_sprites() {
 
 // Skip until 1 line before next label (which will be handled in a new parse_line cycle)
 function skip_label() {
-    console.log("SKIPPING LABEL");
     let found_label = false;
     while (!found_label) {
         curr_line_no += 1;
@@ -393,7 +436,7 @@ function clear_sprites_safe() {
 function eval_choices(arr) {
     let bool_arr = [];
     let OR_mode;
-    console.log(arr);
+    console.log("REQUIREMENTS", arr);
     // OR only if specified, otherwise AND
     if (arr.at(-1) == "||") OR_mode = arr.pop();
     arr.forEach(e => {
@@ -406,7 +449,7 @@ function eval_choices(arr) {
                 // Check for lt only if specified, otherwise gt
                 if (e.at(-1) == "lt") {
                     match = chara_score < e[1];
-                    console.log("chara_score < e[1];", match)
+                    console.log(`${e[0]} < ${e[1]}`, match)
                 }
                 else match = chara_score > e[1];
             }
@@ -517,42 +560,71 @@ function parse_line(back = false) {
         }
     }
 
-    // Handle labels
-    if (curr_line.startsWith("label ") && !back) {
-        let label_content = rstrip_colon(curr_line).split(" ")[1].slice(LANG_PREFIX.length);
-        console.log("LABEL", label_content);
-
-        // Calculate score every label because score implementation can be broken
-        calc_score();
-        console.log(affection_scores);
-
-        let passed = true;
-
-        // Label with choice requirement
-        let requirements = route_dict[label_content];
-        if (requirements) {
-            console.log("REQUIREMENTS");
-            passed = eval_choices(requirements);
-            console.log("PASSED", passed);
-            if (!passed) skip_label();
-        }
-
-        if (passed && label_content.startsWith("choice")) {
-            show_choice(label_content);
-            return;
-        }
-        // CANNOT CLEAR HERE ALSO
-        // clear_sprites();
-    }
-
     if (curr_line.startsWith("hide ")) {
         let sprite_char_name = rstrip_colon(curr_line.slice(5));
         hide_sprite(sprite_char_name);
     }
 
-    // Keep parsing lines until reaching next dialog
+    // Handle labels
+    if (curr_line.startsWith("label ") && !back) {
+
+        let returned_from_jump = false;
+        let passed = true;
+
+        // If currently in a jump and encountering a new label, exit from jump and return to original location
+        if (ret_loc) {
+            curr_line_no = ret_loc;
+            curr_line = get_curr_line();
+            ret_loc = 0;
+            returned_from_jump = true;
+            console.log("RETURNED FROM JUMP");
+            console.log(curr_line_no, curr_line);
+        }
+
+        // Retrieve label name from line
+        let label_content = rstrip_colon(curr_line).split(" ")[1].slice(LANG_PREFIX.length);
+
+        // Skip incompatible labels
+        while (incompatible_labels[label_content] in choices_dict) {
+            skip_label();
+            label_content = rstrip_colon(get_curr_line()).split(" ")[1].slice(LANG_PREFIX.length);
+        }
+
+        // Calculate score every label because score implementation can be broken
+        calc_score();
+        console.log("LABEL", label_content, affection_scores);
+
+        // Label with choice/affection requirements
+        let requirements = route_dict[label_content];
+        if (requirements) {
+            passed = eval_choices(requirements);
+            console.log("PASSED", passed);
+            if (!passed) skip_label();
+        }
+
+        // Check if jump required before label
+        // Will jump into the line right after the target label to avoid skipping it (the target label was probably skipped previously)
+        let jump_label = insert_bef_label_dict[label_content];
+        if (passed && !returned_from_jump && jump_label) {
+            ret_loc = curr_line_no;
+            let jump_loc = curr_script_content_arr.indexOf(`label ${LANG_PREFIX}${jump_label}:`);
+            curr_line_no = jump_loc;
+        }
+
+        // Display choice if this label is valid
+        if (passed && label_content.startsWith("choice")) {
+            show_choice(label_content);
+            return;
+        }
+
+        // CANNOT CLEAR HERE ALSO
+        // clear_sprites();
+    }
+
+    // Keep parsing lines recursively until reaching next dialog (or any line that requires user click)
     if (back) curr_line_no -= 1;
     else curr_line_no += 1;
+
     parse_line(back);
 }
 

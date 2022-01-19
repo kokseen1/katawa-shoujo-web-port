@@ -194,3 +194,7 @@ html, body {
 #cache {
     display: none;
 }
+
+.heartattack{
+    opacity: 30%;
+}
