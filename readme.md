@@ -1,5 +1,11 @@
 # KS Web Port
 
+![Screenshot](https://raw.githubusercontent.com/kokseen1/ks-web-client/main/assets/ui/sd-emi-c.png)
+![Screenshot](https://raw.githubusercontent.com/kokseen1/ks-web-client/main/assets/ui/sd-hanako-c.png)
+![Screenshot](https://raw.githubusercontent.com/kokseen1/ks-web-client/main/assets/ui/sd-lilly-c.png)
+![Screenshot](https://raw.githubusercontent.com/kokseen1/ks-web-client/main/assets/ui/sd-rin-c.png)
+![Screenshot](https://raw.githubusercontent.com/kokseen1/ks-web-client/main/assets/ui/sd-shizune-c.png)
+
 Because this is an easy (enough) visual novel to reverse and reimplement.
 
 ## Features
