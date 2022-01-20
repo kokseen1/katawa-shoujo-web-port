@@ -18,7 +18,7 @@ const COMMON_ROUTE_SCRIPT_NAMES = ['script-a1-monday', 'script-a1-tuesday', 'scr
 const avail_pos = ["center", "left", "right", "twoleft", "tworight"];
 
 // For jQuery fadeIn and fadeOut functions. Might cause race conditions
-const FADE_SPEED = 50;
+const FADE_SPEED = 0;
 
 // Variables for parsing script
 var curr_line_no = -1;
@@ -31,93 +31,10 @@ var awaiting_choice = 0;
 // Stores every choice the user made
 var choices_dict = {};
 
-
-// Determines which labels should be displayed according to choices
-const route_dict = {
-    // Why?
-    // Of course Shizune +1
-    "A1a": [["choiceA1", "m1"]],
-    "A1b": [["choiceA1", "m2"]],
-
-
-    "A2a": [["choiceA1", "m1"]],
-    "A2b": [["choiceA1", "m2"]],
-
-    "A2d": [["choiceA1", "m2"]],
-    "A2e": [["choiceA1", "m1"]],
-
-    // Library Hanako/Lilly +1
-    // Deafness 
-    // Got everything Shizune +1
-    "A3a": [["choiceA3", "m1"]],
-    "A3b": [["choiceA3", "m2"]],
-    "A3c": [["choiceA3", "m3"]],
-
-    // Attack Shizune +1
-    // Defense
-    "A6a": [["choiceA6", "m1"]],
-    "A6b": [["choiceA6", "m2"]],
-
-    // Hi
-    // Sorry Lilly/Hanako +1
-    "A8a": [["choiceA8", "m1"]],
-    "A8aa": [["choiceA8", "m1"], ["choiceA1", "m2"]],
-    "A8ab": [["choiceA8", "m1"]],
-    "A8b": [["choiceA8", "m2"]],
-    "A8d": [["choiceA8", "m1"]],
-    "A8e": [["choiceA8", "m2"]],
-
-    // Cute Lilly/Hanako +1
-    // Not cute
-    "A9a": [["choiceA9", "m1"]],
-    "A9b": [["choiceA9", "m2"]],
-
-    // 
-    "A10a": [["choiceA10a", "m1"], ["choiceA10b", "m2"], ["choiceA10c", "m1"], [["hanako", 1, "lt"], ["lilly", 1, "lt"], ["lilly", 1, "lt"]], "||"],
-    "A10b": [["choiceA10a", "m2"], ["choiceA10c", "m2"], "||"],
-    "A10c": [["choiceA10a", "m3"], ["choiceA10b", "m1"], "||"],
-
-    "choiceA10a": [["hanako", 1], ["lilly", 1], ["shizune", 1]],
-    "choiceA10b": [["shizune", 1]],
-    "choiceA10c": [["hanako", 1], ["lilly", 1]],
-
-    "A11": [["choiceA10a", "m3"], ["choiceA10b", "m1"], "||"],
-    "A11a": [["choiceA10a", "m3"], ["choiceA10b", "m1"], "||"],
-    "A11b": [["choiceA10a", "m3"], ["choiceA10b", "m1"], "||"],
-    "A11c": [["choiceA10a", "m2"], ["choiceA10c", "m2"], "||"],
-    "A11d": [["choiceA10a", "m2"], ["choiceA10c", "m2"], "||"],
-
-    "A11x": [["choiceA10a", "m3"], ["choiceA10b", "m1"], "||"],
-    "A11y": [["choiceA10a", "m1"], ["choiceA10b", "m2"], ["choiceA10c", "m1"], "||"],
-
-    "A12": [["choiceA10a", "m3"], ["choiceA10b", "m1"], "||"],
-    "A13": [["choiceA10a", "m2"], ["choiceA10c", "m2"], "||"],
-};
-
-// Specifies which routes add/reset affection scores
-const affection_dict = {
-    "choiceA1": { "m2": ["shizune"] },
-    "choiceA3": { "m1": ["hanako", "lilly"], "m3": ["shizune"] },
-    "choiceA6": { "m1": ["shizune"] },
-    "choiceA8": { "m2": ["hanako", "lilly"] },
-    "choiceA9": { "m1": ["hanako", "lilly"] },
-    "choiceA10a": { "m2": ["hanako", "lilly"], "m3": ["shizune"] },
-    "choiceA10b": { "m1": ["shizune"] },
-    "choiceA10c": { "m2": ["hanako", "lilly"] },
-};
-
-const insert_bef_label_dict = {
-    "A11d": "A11a",
-};
-
-const incompatible_labels = {
-    "choiceA10b": "choiceA10a",
-    "choiceA10c": "choiceA10a",
-};
-
 // Variable to store the line no. to return to after a jump
 var ret_loc = 0;
 
+// Stores affection scores/flags triggered by choices
 var affection_scores = {};
 
 // Stacks for log and saving/loading
@@ -127,12 +44,14 @@ var bgm_stack = [];
 
 
 function calc_score() {
+    // Set all scores to 0
     affection_scores = {
         "shizune": 0,
         "hanako": 0,
         "lilly": 0,
         "rin": 0,
-        "emi": 0
+        "emi": 0,
+        "training": 0,
     };
 
     for (var choice_name in choices_dict) {
@@ -143,6 +62,7 @@ function calc_score() {
             });
         }
     }
+    $("#dbg").text(JSON.stringify(affection_scores));
 }
 
 function set_bg_force(bg_path) {
@@ -438,7 +358,10 @@ function eval_choices(arr) {
     let OR_mode;
     console.log("REQUIREMENTS", arr);
     // OR only if specified, otherwise AND
-    if (arr.at(-1) == "||") OR_mode = arr.pop();
+    if (arr.at(-1) == "||") {
+        OR_mode = true;
+        arr = arr.slice(0, -1);
+    }
     arr.forEach(e => {
         // Recursively evaluate for nested arrays
         let match;
@@ -593,6 +516,8 @@ function parse_line(back = false) {
         // Calculate score every label because score implementation can be broken
         calc_score();
         console.log("LABEL", label_content, affection_scores);
+        let dbg_text = $("#dbg").text();
+        $("#dbg").html(`${label_content}<br>${dbg_text}`);
 
         // Label with choice/affection requirements
         let requirements = route_dict[label_content];
