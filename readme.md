@@ -1,4 +1,4 @@
-# KS Web Port
+# Katawa Shoujo Web Port
 
 ![Screenshot](https://raw.githubusercontent.com/kokseen1/ks-web-client/main/assets/ui/sd-emi-c.png)
 ![Screenshot](https://raw.githubusercontent.com/kokseen1/ks-web-client/main/assets/ui/sd-hanako-c.png)
